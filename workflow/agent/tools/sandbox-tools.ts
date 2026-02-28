@@ -92,7 +92,7 @@ async function createFile({
         `,
         output: Output.object({
             schema: z.object({
-                content: z.string(),
+                content: z.string().describe("The code created for the given prompt"),
             }),
         })
     })
@@ -145,7 +145,7 @@ async function updateFile({
         `,
         output: Output.object({
             schema: z.object({
-                content: z.string(),
+                content: z.string().describe("The full code code for the updated file for the given prompt"),
             }),
         })
     })
