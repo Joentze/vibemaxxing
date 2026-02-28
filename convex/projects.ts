@@ -112,3 +112,30 @@ export const remove = mutation({
     await ctx.db.delete(args.id);
   },
 });
+
+
+export const createProjectWithSandbox = mutation({
+  args: {
+    title: v.string(),
+    description: v.string(),
+    sandboxExternalId: v.string(),
+    sandboxUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+
+    const sandboxDocId = await ctx.db.insert("sandboxes", {
+      sandboxId: args.sandboxExternalId,
+      url: args.sandboxUrl,
+    });
+    const projectDocId = await ctx.db.insert("projects", {
+      title: args.title,
+      description: args.description,
+      sandboxId: sandboxDocId,
+    });
+
+    return {
+      sandboxId: sandboxDocId,
+      projectId: projectDocId,
+    };
+  },
+});

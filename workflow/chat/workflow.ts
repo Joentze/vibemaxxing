@@ -6,6 +6,7 @@ import { createProjectWithSandbox } from "./steps/convex";
 
 export async function buildAppWorkflow({ title, description }: { title: string, description: string }) {
   "use workflow";
+  globalThis.fetch = fetch;
   getWritable<UIMessageChunk>();
   // start the sandbox environment
   const { sandboxId, url } = await createSandbox();
