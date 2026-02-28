@@ -1,7 +1,7 @@
 import { getWritable } from "workflow";
 import { convertToModelMessages, type UIMessage, type UIMessageChunk } from "ai";
 import { createAgent } from "../agent/coding-agent";
-import { createChat, createChatMessage } from "../chat/steps/convex";
+import { createChat, createChatMessage, getSandboxModalId } from "../chat/steps/convex";
 
 function getLatestMessageByRole(
     messages: UIMessage[],
@@ -15,8 +15,9 @@ export async function remixAppWorkflow({ sandboxId, messages }: { sandboxId: str
     "use workflow";
     const writable = getWritable<UIMessageChunk>();
     globalThis.fetch = fetch;
+    const modalSandboxId = await getSandboxModalId({ sandboxDocId: sandboxId });
     const chatId = await createChat({
-        name: `Remix ${sandboxId}`,
+        name: `Remix ${modalSandboxId}`,
         sandboxId,
     }) as string;
     const latestUserMessage = getLatestMessageByRole(messages, "user");
@@ -24,7 +25,7 @@ export async function remixAppWorkflow({ sandboxId, messages }: { sandboxId: str
         await createChatMessage({ chatId, uiMessage: latestUserMessage });
     }
     const modelMessages = await convertToModelMessages(messages);
-    const agent = createAgent(sandboxId);
+    const agent = createAgent(modalSandboxId);
     const { uiMessages } = await agent.stream({
         messages: modelMessages,
         writable,

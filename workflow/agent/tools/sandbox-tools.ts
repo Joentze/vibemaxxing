@@ -73,6 +73,7 @@ async function createFile({
     path: string;
     prompt: string;
     workdir?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     messages: Record<string, any>;
     timeoutMs?: number;
 }) {
@@ -125,27 +126,42 @@ async function updateFile({
     sandboxId: string;
     path: string;
     prompt: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     messages: Record<string, any>;
     createIfMissing?: boolean;
     workdir?: string;
     timeoutMs?: number;
 }) {
     "use step";
+
+    const readResult = await postJson<SandboxExecResponse>("/api/sandbox/exec", {
+        sandboxId,
+        command: ["cat", path],
+        timeoutMs,
+    });
+    const currentContent = readResult.exitCode === 0 ? readResult.stdout : "";
+
     const { output: { content } } = await generateText({
         model: openai("gpt-5.3-codex"),
         prompt: `
-        update file at path
-        file path:
-        ${path}
+        Update the file at path: ${path}
 
-        based on the following messages, update the file for the given prompt:
+        Here is the current content of the file:
+        \`\`\`
+        ${currentContent}
+        \`\`\`
+
+        Conversation context:
         ${JSON.stringify(messages)}
-        prompt:
+
+        Requested change:
         ${prompt}
+
+        IMPORTANT: Only add the requested features. Do NOT remove, rename, refactor, or otherwise modify any existing code. Return the full updated file content with only the new additions integrated.
         `,
         output: Output.object({
             schema: z.object({
-                content: z.string().describe("The full code code for the updated file for the given prompt"),
+                content: z.string().describe("The full file content with only the requested features added, preserving all existing code as-is"),
             }),
         })
     })
@@ -170,41 +186,41 @@ ${delimiter}`;
     return out;
 }
 
-async function grep({
-    sandboxId,
-    pattern,
-    path,
-    flags,
-    workdir,
-    timeoutMs,
-}: {
-    sandboxId: string;
-    pattern: string;
-    path?: string;
-    flags?: string[];
-    workdir?: string;
-    timeoutMs?: number;
-}) {
-    "use step";
-    console.log(`[tool:grep] args=${truncate({ sandboxId, pattern, path, flags, workdir })}`);
-    const result = await postJson<SandboxExecResponse>("/api/sandbox/exec", {
-        sandboxId,
-        command: [
-            "grep",
-            ...(flags ?? ["-R", "-n"]),
-            "--exclude-dir=node_modules",
-            "--exclude-dir=database",
-            "--exclude=*.lock",
-            "--exclude=bun.lockb",
-            pattern,
-            path ?? ".",
-        ],
-        workdir,
-        timeoutMs,
-    });
-    console.log(`[tool:grep] result=${truncate(result)}`);
-    return truncate(result, 1000);
-}
+// async function grep({
+//     sandboxId,
+//     pattern,
+//     path,
+//     flags,
+//     workdir,
+//     timeoutMs,
+// }: {
+//     sandboxId: string;
+//     pattern: string;
+//     path?: string;
+//     flags?: string[];
+//     workdir?: string;
+//     timeoutMs?: number;
+// }) {
+//     "use step";
+//     console.log(`[tool:grep] args=${truncate({ sandboxId, pattern, path, flags, workdir })}`);
+//     const result = await postJson<SandboxExecResponse>("/api/sandbox/exec", {
+//         sandboxId,
+//         command: [
+//             "grep",
+//             ...(flags ?? ["-R", "-n"]),
+//             "--exclude-dir=node_modules",
+//             "--exclude-dir=database",
+//             "--exclude=*.lock",
+//             "--exclude=bun.lockb",
+//             pattern,
+//             path ?? ".",
+//         ],
+//         workdir,
+//         timeoutMs,
+//     });
+//     console.log(`[tool:grep] result=${truncate(result)}`);
+//     return truncate(result, 1000);
+// }
 
 const sandboxTools = ({ sandboxId }: { sandboxId: string }) => {
     return {

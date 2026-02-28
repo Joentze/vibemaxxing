@@ -10,6 +10,7 @@ type CreateProjectWithSandboxArgs = {
 };
 
 type UntypedConvexHttpClient = {
+    query: (name: string, args: Record<string, unknown>) => Promise<unknown>;
     mutation: (name: string, args: Record<string, unknown>) => Promise<unknown>;
 };
 
@@ -84,4 +85,24 @@ async function updateSandboxStatus(args: { sandboxId: string; agentCoding: "star
     }
 }
 
-export { createProjectWithSandbox, createChat, createChatMessage, updateSandboxStatus };
+async function getSandboxModalId(args: { sandboxDocId: string }): Promise<string> {
+    "use step";
+
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!convexUrl) {
+        throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+    }
+    try {
+        const convex = new ConvexHttpClient(convexUrl) as unknown as UntypedConvexHttpClient;
+        const sandbox = await convex.query("sandboxes:get", { id: args.sandboxDocId }) as { sandboxId: string } | null;
+        if (!sandbox) {
+            throw new Error("Sandbox not found");
+        }
+        return sandbox.sandboxId;
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}
+
+export { createProjectWithSandbox, createChat, createChatMessage, updateSandboxStatus, getSandboxModalId };

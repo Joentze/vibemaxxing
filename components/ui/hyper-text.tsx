@@ -43,6 +43,7 @@ export function HyperText({
   characterSet = DEFAULT_CHARACTER_SET,
   ...props
 }: HyperTextProps) {
+  /* eslint-disable react-hooks/static-components */
   const MotionComponent = motion.create(Component, {
     forwardMotionProps: true,
   })

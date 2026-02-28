@@ -157,10 +157,12 @@ export const CommitTimestamp = ({
   children,
   ...props
 }: CommitTimestampProps) => {
+  /* eslint-disable react-hooks/purity */
   const formatted = relativeTimeFormat.format(
     Math.round((date.getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
     "day"
   );
+  /* eslint-enable react-hooks/purity */
 
   return (
     <time

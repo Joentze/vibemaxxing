@@ -39,6 +39,7 @@ const ShimmerComponent = ({
   duration = 2,
   spread = 2,
 }: TextShimmerProps) => {
+  /* eslint-disable react-hooks/static-components */
   const MotionComponent = getMotionComponent(
     Component as keyof JSX.IntrinsicElements
   );

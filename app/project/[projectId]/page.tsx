@@ -1,6 +1,8 @@
 'use client';
 
 import type { PromptInputMessage } from '@/components/ai-elements/prompt-input';
+import { useChat } from '@ai-sdk/react';
+import { WorkflowChatTransport } from '@workflow/ai';
 
 import {
     Conversation,
@@ -21,7 +23,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ModeToggle } from '@/components/mode-toggle';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RainbowButton } from '@/components/ui/rainbow-button';
 import {
     ResizableHandle,
     ResizablePanel,
@@ -38,11 +39,13 @@ import {
     RefreshCcwIcon,
 } from 'lucide-react';
 import Link from 'next/link';
-import { use, useEffect, useState } from 'react';
+import { use, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../../../convex/_generated/api';
 import type { Id } from '../../../convex/_generated/dataModel';
+import { RainbowButton } from '@/components/ui/rainbow-button';
 
 function useCountdown(expiryDate: number | null) {
+    // eslint-disable-next-line react-hooks/purity
     const [now, setNow] = useState(Date.now());
 
     useEffect(() => {
@@ -119,8 +122,88 @@ export default function ProjectPage({
         api.messages.list,
         latestChatId ? { chatId: latestChatId } : "skip",
     );
+    const statusInfo = project?.agentCoding
+        ? statusConfig[project.agentCoding]
+        : null;
+    const isRemixEnabled = project?.agentCoding === 'finished';
+
+    const sandboxIdRef = useRef(project?.sandboxId);
+    sandboxIdRef.current = project?.sandboxId;
+
+    const runStorageKey = useMemo(
+        () => `active-workflow-run-id:${projectId}`,
+        [projectId],
+    );
+    const activeRunId = useMemo(() => {
+        if (typeof window === 'undefined') return undefined;
+        return localStorage.getItem(runStorageKey) ?? undefined;
+    }, [runStorageKey]);
+
+    const [transport] = useState(() => new WorkflowChatTransport({
+        api: '/api/chat',
+        prepareSendMessagesRequest: ({ api, messages }) => ({
+            api,
+            body: { messages, sandboxId: sandboxIdRef.current },
+        }),
+        onChatSendMessage: (response) => {
+                const workflowRunId = response.headers.get('x-workflow-run-id');
+                if (workflowRunId) {
+                    localStorage.setItem(runStorageKey, workflowRunId);
+                }
+            },
+            onChatEnd: () => {
+                localStorage.removeItem(runStorageKey);
+            },
+            prepareReconnectToStreamRequest: ({ ...rest }) => {
+                const runId = localStorage.getItem(runStorageKey);
+                if (!runId) {
+                    throw new Error('No active workflow run ID found');
+                }
+                return {
+                    ...rest,
+                    api: `/api/chat/${encodeURIComponent(runId)}/stream`,
+                };
+            },
+        }),
+    );
+
+    const {
+        messages,
+        sendMessage,
+        setMessages,
+        status: chatStatus,
+    } = useChat({
+        resume: Boolean(activeRunId),
+        transport,
+    });
+
     const [iframeKey, setIframeKey] = useState(0);
-    const handleRemixSubmit = (_message: PromptInputMessage) => { };
+    const isChatBusy = chatStatus === 'submitted' || chatStatus === 'streaming';
+    const isRemixSubmittingRef = useRef(false);
+
+    useEffect(() => {
+        if (!chatMessages || chatMessages.length === 0 || messages.length > 0) {
+            return;
+        }
+        setMessages(
+            chatMessages.map((message) => ({
+                id: message.uiMessageId ?? message._id,
+                role: message.role,
+                parts: Array.isArray(message.parts) ? message.parts : [],
+            })),
+        );
+    }, [chatMessages, messages.length, setMessages]);
+
+    async function handleRemixSubmit(message: PromptInputMessage) {
+        const text = message.text.trim();
+
+        isRemixSubmittingRef.current = true;
+        try {
+            sendMessage({ text });
+        } finally {
+            isRemixSubmittingRef.current = false;
+        }
+    }
 
     if (project === undefined) {
         return (
@@ -153,11 +236,6 @@ export default function ProjectPage({
         );
     }
 
-    const statusInfo = project.agentCoding
-        ? statusConfig[project.agentCoding]
-        : null;
-    const isRemixEnabled = project.agentCoding === 'finished';
-
     return (
         <div className="flex h-screen flex-col">
             <TopBar
@@ -180,9 +258,9 @@ export default function ProjectPage({
                             >
                                 <Conversation className="relative min-h-0 flex-1">
                                     <ConversationContent>
-                                        {chatMessages && chatMessages.length > 0 ? (
-                                            chatMessages.map((message) => (
-                                                <Message from={message.role} key={message._id}>
+                                        {messages.length > 0 ? (
+                                            messages.map((message) => (
+                                                <Message from={message.role} key={message.id}>
                                                     <MessageContent>
                                                         {getTextFromParts(message.parts) || '(no text content)'}
                                                     </MessageContent>
@@ -208,18 +286,18 @@ export default function ProjectPage({
                                             <PromptInputBody>
                                                 <PromptInputTextarea
                                                     placeholder="Remix this app..."
-                                                    disabled={!isRemixEnabled}
+                                                    disabled={!isRemixEnabled || isChatBusy}
                                                 />
                                             </PromptInputBody>
                                             <PromptInputFooter>
                                                 <PromptInputSubmit
                                                     className="ml-auto mr-6"
-                                                    disabled={!isRemixEnabled}
+                                                    status={chatStatus}
+                                                    disabled={!isRemixEnabled || isChatBusy}
                                                 >
                                                     <RainbowButton
                                                         type="submit"
                                                         variant="outline"
-                                                        disabled={!isRemixEnabled}
                                                     >
                                                         Remix
                                                     </RainbowButton>
