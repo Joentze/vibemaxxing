@@ -13,8 +13,11 @@ const execSchema = z.object({
 
 export async function POST(req: Request) {
   try {
+    console.log("exec route");
     const body = execSchema.parse(await req.json());
+    console.log(body);
     const result = await execSandboxCommand(body);
+    console.log(result);
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

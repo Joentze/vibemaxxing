@@ -67,6 +67,7 @@ export async function execSandboxCommand(params: ExecSandboxParams) {
     process.stderr.readText(),
     process.wait(),
   ]);
+  console.log(stdout, stderr, exitCode);
 
   sandbox.detach();
 

@@ -2,12 +2,13 @@ import { getWritable } from "workflow";
 import type { UIMessageChunk } from "ai";
 import { createSandbox, terminateSandbox } from "./steps/sandbox";
 import { createProjectWithSandbox } from "./steps/convex";
+import { createAgent } from "../agent/coding-agent";
 
 
 export async function buildAppWorkflow({ title, description }: { title: string, description: string }) {
   "use workflow";
   globalThis.fetch = fetch;
-  getWritable<UIMessageChunk>();
+  const writable = getWritable<UIMessageChunk>();
   // start the sandbox environment
   const { sandboxId, url, expiryDate } = await createSandbox();
   // create project and sandbox rows in Convex
@@ -19,7 +20,33 @@ export async function buildAppWorkflow({ title, description }: { title: string, 
     sandboxExpiryDate: expiryDate,
   });
   // run the agent
+  const agent = createAgent(sandboxId);
+
+
+  const prompt = `
+  Create an app with the following title and description:
+  ${title}
+  ${description}
+  `
+  console.log(prompt);
+  const { messages } = await agent.stream({
+    messages: [
+      {
+        role: "user",
+        content: [{ type: "text", text: prompt }],
+      }
+    ],
+    writable,
+    onStepFinish: ({ toolCalls }) => {
+      console.log(toolCalls);
+    },
+    onFinish: () => {
+      console.log("Finished");
+    }
+  })
+  console.log(JSON.stringify(messages, null, 2));
 
   // update the statuses accordingly
-  await terminateSandbox(sandboxId);
+  // await terminateSandbox(sandboxId);
 }
+

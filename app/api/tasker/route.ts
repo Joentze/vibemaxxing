@@ -27,6 +27,7 @@ export async function POST(req: Request) {
     });
 
     for await (const element of elementStream) {
+        console.log(element);
         await start(buildAppWorkflow, [element]);
     }
 
