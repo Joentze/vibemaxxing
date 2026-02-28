@@ -18,15 +18,16 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     return (await response.json()) as T;
 }
 
-async function createSandbox(): Promise<{ sandboxId: string; url: string }> {
+async function createSandbox(): Promise<{ sandboxId: string; url: string; expiryDate: number }> {
   "use step";
-  const result = await postJson<{ sandboxId: string; url?: string }>(
+  const result = await postJson<{ sandboxId: string; url?: string; expiryDate: number }>(
     "/api/sandbox/create",
     {},
   );
   return {
     sandboxId: result.sandboxId,
     url: result.url ?? "",
+    expiryDate: result.expiryDate,
   };
 }
 

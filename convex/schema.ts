@@ -20,6 +20,7 @@ export default defineSchema({
     sandboxes: defineTable({
         sandboxId: v.string(),
         url: v.string(),
+        expiryDate: v.optional(v.number()),
     }).index("by_sandboxId", ["sandboxId"]),
 
     projects: defineTable({

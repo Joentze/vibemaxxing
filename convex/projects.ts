@@ -52,11 +52,13 @@ export const createWithSandbox = mutation({
     description: v.string(),
     sandboxExternalId: v.string(),
     sandboxUrl: v.string(),
+    sandboxExpiryDate: v.number(),
   },
   handler: async (ctx, args) => {
     const sandboxDocId = await ctx.db.insert("sandboxes", {
       sandboxId: args.sandboxExternalId,
       url: args.sandboxUrl,
+      expiryDate: args.sandboxExpiryDate,
     });
 
     const projectDocId = await ctx.db.insert("projects", {
@@ -120,12 +122,14 @@ export const createProjectWithSandbox = mutation({
     description: v.string(),
     sandboxExternalId: v.string(),
     sandboxUrl: v.string(),
+    sandboxExpiryDate: v.number(),
   },
   handler: async (ctx, args) => {
 
     const sandboxDocId = await ctx.db.insert("sandboxes", {
       sandboxId: args.sandboxExternalId,
       url: args.sandboxUrl,
+      expiryDate: args.sandboxExpiryDate,
     });
     const projectDocId = await ctx.db.insert("projects", {
       title: args.title,

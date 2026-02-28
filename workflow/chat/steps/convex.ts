@@ -5,6 +5,7 @@ type CreateProjectWithSandboxArgs = {
     description: string;
     sandboxExternalId: string;
     sandboxUrl: string;
+    sandboxExpiryDate: number;
 };
 
 type UntypedConvexHttpClient = {

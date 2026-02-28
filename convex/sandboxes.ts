@@ -19,11 +19,13 @@ export const create = mutation({
   args: {
     sandboxId: v.string(),
     url: v.string(),
+    expiryDate: v.number(),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("sandboxes", {
       sandboxId: args.sandboxId,
       url: args.url,
+      expiryDate: args.expiryDate,
     });
   },
 });
@@ -33,6 +35,7 @@ export const update = mutation({
     id: v.id("sandboxes"),
     sandboxId: v.optional(v.string()),
     url: v.optional(v.string()),
+    expiryDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db.get(args.id);
@@ -43,6 +46,7 @@ export const update = mutation({
     const updates: Record<string, unknown> = {};
     if (args.sandboxId !== undefined) updates.sandboxId = args.sandboxId;
     if (args.url !== undefined) updates.url = args.url;
+    if (args.expiryDate !== undefined) updates.expiryDate = args.expiryDate;
 
     await ctx.db.patch(args.id, updates);
   },

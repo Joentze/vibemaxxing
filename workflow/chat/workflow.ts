@@ -9,13 +9,14 @@ export async function buildAppWorkflow({ title, description }: { title: string, 
   globalThis.fetch = fetch;
   getWritable<UIMessageChunk>();
   // start the sandbox environment
-  const { sandboxId, url } = await createSandbox();
+  const { sandboxId, url, expiryDate } = await createSandbox();
   // create project and sandbox rows in Convex
   await createProjectWithSandbox({
     title,
     description,
     sandboxExternalId: sandboxId,
     sandboxUrl: url,
+    sandboxExpiryDate: expiryDate,
   });
   // run the agent
 

@@ -18,8 +18,10 @@ type ExecSandboxParams = {
 
 const DEFAULT_APP_NAME = "base-nitro-bun-codex-cli-app";
 const DEFAULT_IMAGE = "joentze/nitro-bun-codex-cli-app-template:latest";
+const SANDBOX_TIMEOUT_MS = 60 * 60 * 1000;
 
 export async function createSandbox(params: CreateSandboxParams = {}) {
+  const expiryDate = Date.now() + SANDBOX_TIMEOUT_MS;
   const app = await modal.apps.fromName(params.appName ?? DEFAULT_APP_NAME, {
     createIfMissing: true,
   });
@@ -29,7 +31,7 @@ export async function createSandbox(params: CreateSandboxParams = {}) {
     workdir: params.workdir ?? "/app",
     encryptedPorts: params.encryptedPorts ?? [3000],
     command: params.command ?? ["bun", "dev", "--", "--host", "0.0.0.0"],
-    timeoutMs: params.timeoutMs,
+    timeoutMs: SANDBOX_TIMEOUT_MS,
     cpu: 1,
     cpuLimit: 2,
     memoryMiB: 1024,
@@ -48,6 +50,7 @@ export async function createSandbox(params: CreateSandboxParams = {}) {
   return {
     sandboxId: sandbox.sandboxId,
     url,
+    expiryDate,
   };
 
 }
