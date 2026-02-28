@@ -28,4 +28,20 @@ async function createProjectWithSandbox(args: CreateProjectWithSandboxArgs) {
     }
 }
 
-export { createProjectWithSandbox };
+async function updateSandboxStatus(args: { sandboxId: string; agentCoding: "started" | "coding" | "finished" }) {
+    "use step";
+
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!convexUrl) {
+        throw new Error("NEXT_PUBLIC_CONVEX_URL is not configured");
+    }
+    try {
+        const convex = new ConvexHttpClient(convexUrl) as unknown as UntypedConvexHttpClient;
+        return await convex.mutation("sandboxes:update", { id: args.sandboxId, agentCoding: args.agentCoding });
+    } catch (error) {
+        console.error(error);
+        throw error;
+    }
+}
+
+export { createProjectWithSandbox, updateSandboxStatus };

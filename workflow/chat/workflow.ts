@@ -1,7 +1,7 @@
 import { getWritable } from "workflow";
 import type { UIMessageChunk } from "ai";
 import { createSandbox, terminateSandbox } from "./steps/sandbox";
-import { createProjectWithSandbox } from "./steps/convex";
+import { createProjectWithSandbox, updateSandboxStatus } from "./steps/convex";
 import { createAgent } from "../agent/coding-agent";
 import { createProjectImage } from "./steps/generate-image";
 
@@ -13,17 +13,18 @@ export async function buildAppWorkflow({ title, description }: { title: string, 
   // start the sandbox environment
   const { sandboxId, url, expiryDate } = await createSandbox();
   // create project and sandbox rows in Convex
-  await createProjectWithSandbox({
+  const { sandboxId: sandboxDocId } = await createProjectWithSandbox({
     title,
     description,
     sandboxExternalId: sandboxId,
     sandboxUrl: url,
     sandboxExpiryDate: expiryDate,
-  });
+  }) as { sandboxId: string; projectId: string };
 
   const image = await createProjectImage({ title, description });
   console.log(image);
   // run the agent
+  await updateSandboxStatus({ sandboxId: sandboxDocId, agentCoding: "coding" });
 
   const agent = createAgent(sandboxId);
 
@@ -45,8 +46,8 @@ export async function buildAppWorkflow({ title, description }: { title: string, 
     onStepFinish: ({ toolCalls }) => {
       console.log(toolCalls);
     },
-    onFinish: () => {
-
+    onFinish: async () => {
+      await updateSandboxStatus({ sandboxId: sandboxDocId, agentCoding: "finished" });
     }
   })
   console.log(JSON.stringify(messages, null, 2));

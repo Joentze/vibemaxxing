@@ -26,7 +26,7 @@ export const generateProjectImage = internalAction({
           model: "dall-e-3",
           prompt: `Create a project thumbnail image in a studio ghibli style for: ${args.title} - ${args.description}`,
           n: 1,
-          size: "512x512",
+          size: "1024x1024",
         }),
       },
     );

@@ -17,6 +17,26 @@ export const list = query({
   },
 });
 
+export const listWithStatus = query({
+  args: {},
+  handler: async (ctx) => {
+    const projects = await ctx.db.query("projects").order("desc").collect();
+    return Promise.all(
+      projects.map(async (project) => {
+        const sandbox = await ctx.db.get(project.sandboxId);
+        return {
+          ...project,
+          ...(project.image
+            ? { imageUrl: await ctx.storage.getUrl(project.image) }
+            : {}),
+          sandboxUrl: sandbox?.url ?? null,
+          agentCoding: sandbox?.agentCoding ?? null,
+        };
+      }),
+    );
+  },
+});
+
 export const listBySandbox = query({
   args: { sandboxId: v.id("sandboxes") },
   handler: async (ctx, args) => {
