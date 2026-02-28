@@ -8,6 +8,7 @@ import {
     ConversationEmptyState,
     ConversationScrollButton,
 } from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 import {
     PromptInput,
     PromptInputBody,
@@ -82,6 +83,24 @@ const statusConfig = {
     },
 };
 
+function getTextFromParts(parts: unknown): string {
+    if (!Array.isArray(parts)) {
+        return '';
+    }
+    return parts
+        .filter(
+            (part): part is { type: string; text?: string } =>
+                typeof part === 'object' &&
+                part !== null &&
+                'type' in part &&
+                typeof (part as { type: string }).type === 'string',
+        )
+        .map((part) => (part.type === 'text' && typeof part.text === 'string' ? part.text : ''))
+        .filter(Boolean)
+        .join('\n')
+        .trim();
+}
+
 export default function ProjectPage({
     params,
 }: {
@@ -91,6 +110,15 @@ export default function ProjectPage({
     const project = useQuery(api.projects.getWithStatus, {
         id: projectId as Id<'projects'>,
     });
+    const chats = useQuery(
+        api.chats.listBySandbox,
+        project ? { sandboxId: project.sandboxId } : "skip",
+    );
+    const latestChatId = chats?.[0]?._id;
+    const chatMessages = useQuery(
+        api.messages.list,
+        latestChatId ? { chatId: latestChatId } : "skip",
+    );
     const [iframeKey, setIframeKey] = useState(0);
     const handleRemixSubmit = (_message: PromptInputMessage) => { };
 
@@ -152,15 +180,25 @@ export default function ProjectPage({
                             >
                                 <Conversation className="relative min-h-0 flex-1">
                                     <ConversationContent>
-                                        <ConversationEmptyState
-                                            title="Start remixing"
-                                            description={
-                                                isRemixEnabled
-                                                    ? 'Your remix conversation will appear here.'
-                                                    : 'Remix is available when sandbox status is Finished.'
-                                            }
-                                            icon={<MessageSquareIcon className="size-6" />}
-                                        />
+                                        {chatMessages && chatMessages.length > 0 ? (
+                                            chatMessages.map((message) => (
+                                                <Message from={message.role} key={message._id}>
+                                                    <MessageContent>
+                                                        {getTextFromParts(message.parts) || '(no text content)'}
+                                                    </MessageContent>
+                                                </Message>
+                                            ))
+                                        ) : (
+                                            <ConversationEmptyState
+                                                title="Start remixing"
+                                                description={
+                                                    isRemixEnabled
+                                                        ? 'Your remix conversation will appear here.'
+                                                        : 'Remix is available when sandbox status is Finished.'
+                                                }
+                                                icon={<MessageSquareIcon className="size-6" />}
+                                            />
+                                        )}
                                     </ConversationContent>
                                     <ConversationScrollButton />
                                 </Conversation>

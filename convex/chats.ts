@@ -8,6 +8,17 @@ export const list = query({
   },
 });
 
+export const listBySandbox = query({
+  args: { sandboxId: v.id("sandboxes") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("chats")
+      .withIndex("by_sandboxId", (q) => q.eq("sandboxId", args.sandboxId))
+      .order("desc")
+      .collect();
+  },
+});
+
 export const get = query({
   args: { id: v.id("chats") },
   handler: async (ctx, args) => {
@@ -16,11 +27,12 @@ export const get = query({
 });
 
 export const create = mutation({
-  args: { name: v.string() },
+  args: { name: v.string(), sandboxId: v.id("sandboxes") },
   handler: async (ctx, args) => {
     const now = Date.now();
     return await ctx.db.insert("chats", {
       name: args.name,
+      sandboxId: args.sandboxId,
       updatedAt: now,
     });
   },

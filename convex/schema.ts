@@ -5,12 +5,18 @@ import { v } from "convex/values";
 export default defineSchema({
     chats: defineTable({
         name: v.string(),
+        sandboxId: v.id("sandboxes"),
         updatedAt: v.number(),
-    }),
+    }).index("by_sandboxId", ["sandboxId"]),
 
     messages: defineTable({
         chatId: v.id("chats"),
-        role: v.string(),
+        uiMessageId: v.optional(v.string()),
+        role: v.union(
+            v.literal("system"),
+            v.literal("user"),
+            v.literal("assistant"),
+        ),
         parts: v.any(),
         attachments: v.any(),
         metadata: v.any(),

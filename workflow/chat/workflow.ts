@@ -1,9 +1,21 @@
 import { getWritable } from "workflow";
-import type { UIMessageChunk } from "ai";
+import type { UIMessage, UIMessageChunk } from "ai";
 import { createSandbox, terminateSandbox } from "./steps/sandbox";
-import { createProjectWithSandbox, updateSandboxStatus } from "./steps/convex";
+import {
+  createChat,
+  createChatMessage,
+  createProjectWithSandbox,
+  updateSandboxStatus,
+} from "./steps/convex";
 import { createAgent } from "../agent/coding-agent";
 import { createProjectImage } from "./steps/generate-image";
+
+function getLatestMessageByRole(
+  messages: UIMessage[],
+  role: UIMessage["role"],
+): UIMessage | undefined {
+  return [...messages].reverse().find((message) => message.role === role);
+}
 
 
 export async function buildAppWorkflow({ title, description }: { title: string, description: string }) {
@@ -13,7 +25,7 @@ export async function buildAppWorkflow({ title, description }: { title: string, 
   // start the sandbox environment
   const { sandboxId, url, expiryDate } = await createSandbox();
   // create project and sandbox rows in Convex
-  const { sandboxId: sandboxDocId } = await createProjectWithSandbox({
+  const { sandboxId: sandboxDocId, projectId } = await createProjectWithSandbox({
     title,
     description,
     sandboxExternalId: sandboxId,
@@ -35,6 +47,23 @@ export async function buildAppWorkflow({ title, description }: { title: string, 
   ${description}
   `
   console.log(prompt);
+
+  const chatId = await createChat({
+    name: title,
+    sandboxId: sandboxDocId,
+  }) as string;
+  const initialUiMessages: UIMessage[] = [
+    {
+      id: `user-${projectId}-${Date.now()}`,
+      role: "user",
+      parts: [{ type: "text", text: prompt }],
+    },
+  ];
+  const latestUserMessage = getLatestMessageByRole(initialUiMessages, "user");
+  if (latestUserMessage) {
+    await createChatMessage({ chatId, uiMessage: latestUserMessage });
+  }
+
   const { messages, uiMessages } = await agent.stream({
     collectUIMessages: true,
     messages: [
@@ -47,10 +76,15 @@ export async function buildAppWorkflow({ title, description }: { title: string, 
     onStepFinish: ({ toolCalls }) => {
       console.log(toolCalls);
     },
-    onFinish: async () => {
-      await updateSandboxStatus({ sandboxId: sandboxDocId, agentCoding: "finished" });
-    }
   })
+  const assistantMessage = getLatestMessageByRole(
+    uiMessages ?? [],
+    "assistant",
+  );
+  if (assistantMessage) {
+    await createChatMessage({ chatId, uiMessage: assistantMessage });
+  }
+  await updateSandboxStatus({ sandboxId: sandboxDocId, agentCoding: "finished" });
   console.log(JSON.stringify(messages, null, 2));
 
   // update the statuses accordingly

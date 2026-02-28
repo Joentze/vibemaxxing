@@ -22,7 +22,12 @@ export const get = query({
 export const create = mutation({
   args: {
     chatId: v.id("chats"),
-    role: v.string(),
+    uiMessageId: v.optional(v.string()),
+    role: v.union(
+      v.literal("system"),
+      v.literal("user"),
+      v.literal("assistant"),
+    ),
     parts: v.any(),
     attachments: v.any(),
     metadata: v.any(),
@@ -35,6 +40,7 @@ export const create = mutation({
     const now = Date.now();
     const messageId = await ctx.db.insert("messages", {
       chatId: args.chatId,
+      uiMessageId: args.uiMessageId,
       role: args.role,
       parts: args.parts,
       attachments: args.attachments,
@@ -49,7 +55,14 @@ export const create = mutation({
 export const update = mutation({
   args: {
     id: v.id("messages"),
-    role: v.optional(v.string()),
+    uiMessageId: v.optional(v.string()),
+    role: v.optional(
+      v.union(
+        v.literal("system"),
+        v.literal("user"),
+        v.literal("assistant"),
+      ),
+    ),
     parts: v.optional(v.any()),
     attachments: v.optional(v.any()),
     metadata: v.optional(v.any()),
