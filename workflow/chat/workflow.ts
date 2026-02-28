@@ -35,7 +35,8 @@ export async function buildAppWorkflow({ title, description }: { title: string, 
   ${description}
   `
   console.log(prompt);
-  const { messages } = await agent.stream({
+  const { messages, uiMessages } = await agent.stream({
+    collectUIMessages: true,
     messages: [
       {
         role: "user",

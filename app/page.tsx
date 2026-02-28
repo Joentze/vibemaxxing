@@ -10,22 +10,17 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from '@/components/ai-elements/prompt-input';
-import { Badge } from '@/components/ui/badge';
-import { BorderBeam } from '@/components/ui/border-beam';
+import { ProjectCard } from '@/components/project-card';
 import { HyperText } from '@/components/ui/hyper-text';
-import { MagicCard } from '@/components/ui/magic-card';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { RainbowButton } from '@/components/ui/rainbow-button';
 import { RetroGrid } from '@/components/ui/retro-grid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from 'convex/react';
-import { ExternalLinkIcon, LoaderIcon } from 'lucide-react';
+import { LoaderIcon } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
 import { api } from '../convex/_generated/api';
-
-type ProjectWithStatus = NonNullable<
-  ReturnType<typeof useQuery<typeof api.projects.listWithStatus>>
->[number];
+import { ModeToggle } from '@/components/mode-toggle';
 
 export default function Page() {
   const [isLoading, setIsLoading] = useState(false);
@@ -83,8 +78,11 @@ export default function Page() {
   );
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-8 p-4 pb-12">
-      <div className="mt-8">
+    <div className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-8 overflow-x-hidden p-4 pb-12">
+      <div className="fixed top-4 right-4 z-50">
+        <ModeToggle />
+      </div>
+      <div className="mt-8 z-10">
         <div className="my-4">
           <div className="mb-4 flex flex-col items-center justify-center pb-6">
             <HyperText className="mx-auto text-4xl font-bold">
@@ -180,67 +178,3 @@ export default function Page() {
   );
 }
 
-function ProjectCard({ project }: { project: ProjectWithStatus }) {
-  const isActive =
-    project.agentCoding === 'started' || project.agentCoding === 'coding';
-
-  return (
-    <MagicCard className="rounded-xl">
-      <div className="relative flex flex-col gap-3 p-5">
-        {project.imageUrl && (
-          <img
-            src={project.imageUrl}
-            alt={project.title}
-            className="aspect-video w-full rounded-md object-cover"
-          />
-        )}
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold leading-tight">{project.title}</h3>
-          <StatusBadge status={project.agentCoding} />
-        </div>
-        <p className="line-clamp-2 text-sm text-muted-foreground">
-          {project.description}
-        </p>
-        {project.sandboxUrl && (
-          <a
-            href={project.sandboxUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
-          >
-            Open preview <ExternalLinkIcon className="size-3" />
-          </a>
-        )}
-        {isActive && <BorderBeam size={120} duration={8} />}
-      </div>
-    </MagicCard>
-  );
-}
-
-function StatusBadge({
-  status,
-}: {
-  status: 'started' | 'coding' | 'finished' | null;
-}) {
-  if (!status) return null;
-
-  const config = {
-    started: { label: 'Starting', variant: 'outline' as const },
-    coding: { label: 'Coding', variant: 'secondary' as const },
-    finished: { label: 'Finished', variant: 'default' as const },
-  };
-
-  const { label, variant } = config[status];
-
-  return (
-    <Badge variant={variant} className="shrink-0">
-      {(status === 'started' || status === 'coding') && (
-        <span className="relative mr-1 flex size-2">
-          <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-75" />
-          <span className="relative inline-flex size-2 rounded-full bg-current" />
-        </span>
-      )}
-      {label}
-    </Badge>
-  );
-}

@@ -62,6 +62,24 @@ export const get = query({
   },
 });
 
+export const getWithStatus = query({
+  args: { id: v.id("projects") },
+  handler: async (ctx, args) => {
+    const project = await ctx.db.get(args.id);
+    if (!project) return null;
+    const sandbox = await ctx.db.get(project.sandboxId);
+    return {
+      ...project,
+      ...(project.image
+        ? { imageUrl: await ctx.storage.getUrl(project.image) }
+        : {}),
+      sandboxUrl: sandbox?.url ?? null,
+      agentCoding: sandbox?.agentCoding ?? null,
+      sandboxExpiryDate: sandbox?.expiryDate ?? null,
+    };
+  },
+});
+
 export const create = mutation({
   args: {
     title: v.string(),
