@@ -1,19 +1,23 @@
-import { DurableAgent } from "@workflow/ai/agent";
 import { getWritable } from "workflow";
-import { openai } from "@workflow/ai/openai";
-import type { ModelMessage, UIMessageChunk } from "ai";
+import type { UIMessageChunk } from "ai";
+import { createSandbox, terminateSandbox } from "./steps/sandbox";
+import { createProjectWithSandbox } from "./steps/convex";
 
 
-export async function chatWorkflow(messages: ModelMessage[]) {
+export async function buildAppWorkflow({ title, description }: { title: string, description: string }) {
   "use workflow";
-  const writable = getWritable<UIMessageChunk>();
-  const agent = new DurableAgent({
-    model: openai("gpt-5.1"),
-    system: "You are a helpful assistant.",
+  getWritable<UIMessageChunk>();
+  // start the sandbox environment
+  const { sandboxId, url } = await createSandbox();
+  // create project and sandbox rows in Convex
+  await createProjectWithSandbox({
+    title,
+    description,
+    sandboxExternalId: sandboxId,
+    sandboxUrl: url,
   });
-  await agent.stream({
-    messages,
-    writable,
-  });
+  // run the agent
 
+  // update the statuses accordingly
+  await terminateSandbox(sandboxId);
 }

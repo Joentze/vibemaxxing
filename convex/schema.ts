@@ -16,4 +16,15 @@ export default defineSchema({
         metadata: v.any(),
         updatedAt: v.number(),
     }).index("by_chatId", ["chatId"]),
+
+    sandboxes: defineTable({
+        sandboxId: v.string(),
+        url: v.string(),
+    }).index("by_sandboxId", ["sandboxId"]),
+
+    projects: defineTable({
+        title: v.string(),
+        description: v.string(),
+        sandboxId: v.id("sandboxes"),
+    }).index("by_sandboxId", ["sandboxId"]),
 });
