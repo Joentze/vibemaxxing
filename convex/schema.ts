@@ -21,11 +21,19 @@ export default defineSchema({
         sandboxId: v.string(),
         url: v.string(),
         expiryDate: v.optional(v.number()),
-    }).index("by_sandboxId", ["sandboxId"]),
+        agentCoding: v.union(
+            v.literal("started"),
+            v.literal("coding"),
+            v.literal("finished"),
+        ),
+    })
+        .index("by_sandboxId", ["sandboxId"])
+        .index("by_agentCoding", ["agentCoding"]),
 
     projects: defineTable({
         title: v.string(),
         description: v.string(),
         sandboxId: v.id("sandboxes"),
+        image: v.optional(v.id("_storage")),
     }).index("by_sandboxId", ["sandboxId"]),
 });

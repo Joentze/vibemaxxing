@@ -3,6 +3,7 @@ import type { UIMessageChunk } from "ai";
 import { createSandbox, terminateSandbox } from "./steps/sandbox";
 import { createProjectWithSandbox } from "./steps/convex";
 import { createAgent } from "../agent/coding-agent";
+import { createProjectImage } from "./steps/generate-image";
 
 
 export async function buildAppWorkflow({ title, description }: { title: string, description: string }) {
@@ -19,7 +20,11 @@ export async function buildAppWorkflow({ title, description }: { title: string, 
     sandboxUrl: url,
     sandboxExpiryDate: expiryDate,
   });
+
+  const image = await createProjectImage({ title, description });
+  console.log(image);
   // run the agent
+
   const agent = createAgent(sandboxId);
 
 
@@ -41,7 +46,7 @@ export async function buildAppWorkflow({ title, description }: { title: string, 
       console.log(toolCalls);
     },
     onFinish: () => {
-      console.log("Finished");
+
     }
   })
   console.log(JSON.stringify(messages, null, 2));

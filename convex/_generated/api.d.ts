@@ -9,6 +9,8 @@
  */
 
 import type * as chats from "../chats.js";
+import type * as files from "../files.js";
+import type * as generateImage from "../generateImage.js";
 import type * as messages from "../messages.js";
 import type * as projects from "../projects.js";
 import type * as sandboxes from "../sandboxes.js";
@@ -21,6 +23,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   chats: typeof chats;
+  files: typeof files;
+  generateImage: typeof generateImage;
   messages: typeof messages;
   projects: typeof projects;
   sandboxes: typeof sandboxes;

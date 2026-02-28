@@ -8,6 +8,39 @@ export const list = query({
   },
 });
 
+export const listStarted = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("sandboxes")
+      .withIndex("by_agentCoding", (q) => q.eq("agentCoding", "started"))
+      .order("desc")
+      .collect();
+  },
+});
+
+export const listCoding = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("sandboxes")
+      .withIndex("by_agentCoding", (q) => q.eq("agentCoding", "coding"))
+      .order("desc")
+      .collect();
+  },
+});
+
+export const listFinished = query({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("sandboxes")
+      .withIndex("by_agentCoding", (q) => q.eq("agentCoding", "finished"))
+      .order("desc")
+      .collect();
+  },
+});
+
 export const get = query({
   args: { id: v.id("sandboxes") },
   handler: async (ctx, args) => {
@@ -20,12 +53,18 @@ export const create = mutation({
     sandboxId: v.string(),
     url: v.string(),
     expiryDate: v.number(),
+    agentCoding: v.union(
+      v.literal("started"),
+      v.literal("coding"),
+      v.literal("finished"),
+    ),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("sandboxes", {
       sandboxId: args.sandboxId,
       url: args.url,
       expiryDate: args.expiryDate,
+      agentCoding: args.agentCoding,
     });
   },
 });
@@ -36,6 +75,13 @@ export const update = mutation({
     sandboxId: v.optional(v.string()),
     url: v.optional(v.string()),
     expiryDate: v.optional(v.number()),
+    agentCoding: v.optional(
+      v.union(
+        v.literal("started"),
+        v.literal("coding"),
+        v.literal("finished"),
+      ),
+    ),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db.get(args.id);
@@ -47,6 +93,7 @@ export const update = mutation({
     if (args.sandboxId !== undefined) updates.sandboxId = args.sandboxId;
     if (args.url !== undefined) updates.url = args.url;
     if (args.expiryDate !== undefined) updates.expiryDate = args.expiryDate;
+    if (args.agentCoding !== undefined) updates.agentCoding = args.agentCoding;
 
     await ctx.db.patch(args.id, updates);
   },
